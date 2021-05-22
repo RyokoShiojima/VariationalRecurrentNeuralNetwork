@@ -21,8 +21,10 @@ def train(epoch):
 		#transforming data
 		#data = Variable(data)
 		#to remove eventually
+		#data, _ = data.to(device, dtype=torch.float), _.to(device, dtype=torch.float)
 		data = Variable(data.squeeze().transpose(0, 1))
-		data = (data - data.min().data[0]) / (data.max().data[0] - data.min().data[0])
+		data = (data - data.min().data.item()) / (data.max().data.item() - data.min().data.item())
+		#data = data.to(device)
 		
 		#forward + backward + optimize
 		optimizer.zero_grad()
@@ -39,14 +41,14 @@ def train(epoch):
 			print('Train Epoch: {} [{}/{} ({:.0f}%)]\t KLD Loss: {:.6f} \t NLL Loss: {:.6f}'.format(
 				epoch, batch_idx * len(data), len(train_loader.dataset),
 				100. * batch_idx / len(train_loader),
-				kld_loss.data[0] / batch_size,
-				nll_loss.data[0] / batch_size))
+				kld_loss.data.item() / batch_size,
+				nll_loss.data.item() / batch_size))
 
 			sample = model.sample(28)
 			plt.imshow(sample.numpy())
 			plt.pause(1e-6)
 
-		train_loss += loss.data[0]
+		train_loss += loss.data.item()
 
 
 	print('====> Epoch: {} Average loss: {:.4f}'.format(
@@ -61,12 +63,13 @@ def test(epoch):
 	for i, (data, _) in enumerate(test_loader):                                            
 		
 		#data = Variable(data)
+		#data, _ = data.to(device, dtype=torch.float), _.to(device, dtype=torch.float)
 		data = Variable(data.squeeze().transpose(0, 1))
-		data = (data - data.min().data[0]) / (data.max().data[0] - data.min().data[0])
+		data = (data - data.min().data.item()) / (data.max().data.item() - data.min().data.item())
 
 		kld_loss, nll_loss, _, _ = model(data)
-		mean_kld_loss += kld_loss.data[0]
-		mean_nll_loss += nll_loss.data[0]
+		mean_kld_loss += kld_loss.data.item()
+		mean_nll_loss += nll_loss.data.item()
 
 	mean_kld_loss /= len(test_loader.dataset)
 	mean_nll_loss /= len(test_loader.dataset)
@@ -103,7 +106,9 @@ test_loader = torch.utils.data.DataLoader(
 		transform=transforms.ToTensor()),
     batch_size=batch_size, shuffle=True)
 
-model = VRNN(x_dim, h_dim, z_dim, n_layers)
+#device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+#print('use_device:', device)
+model = VRNN(x_dim, h_dim, z_dim, n_layers)#.to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 for epoch in range(1, n_epochs + 1):
